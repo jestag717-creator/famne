@@ -1,0 +1,50 @@
+local tokens = [[
+PASTE TOKENS HERE
+]]
+
+local useProxy = true -- For SurferBot
+local connectBot = true
+
+local function parseTokenLine(line)
+    local bot = {}
+    
+    for key_value in line:gmatch("[^|]+") do
+        local key, value = key_value:match("([^:]+):(.+)")
+        if key and value then
+            bot[key] = value
+        end
+    end
+    
+    return bot
+end
+
+local function configureAndAddBot(bot)
+    if not bot.token then
+        return
+    end
+
+    bot.connect = connectBot
+
+    if type(calculateBackpackCost) == "function" then
+        if useProxy then
+            bot.proxy = "auto"
+        end
+        bot.type = TOKEN
+    else
+        bot.name = bot.token
+        bot.platform = tonumber(bot.platform)
+    end
+
+    for key, value in pairs(bot) do
+        print(key .. ": " .. tostring(value))
+    end
+
+    if addBot(bot) then
+        print("Bot has been added: " .. (bot.name or "Unknown"))
+    end
+end
+
+for line in tokens:gmatch("[^\r\n]+") do
+    local bot = parseTokenLine(line)
+    configureAndAddBot(bot)
+end

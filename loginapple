@@ -1,0 +1,21 @@
+```local tokens = [[
+PASTE TOKENS HERE
+]]
+
+local useProxy, connectBot = false, true
+
+for line in tokens:gmatch("[^\r\n]+") do
+    local b = {}
+    for k, v in line:gmatch("([^:|]+):([^|]+)") do b[k] = v end
+    if b.token then
+        b.connect = connectBot
+        if type(calculateBackpackCost) == "function" then
+            if useProxy then b.proxy = "auto" end
+            b.type = TOKEN
+        else
+            b.name = b.token
+            b.platform = tonumber(b.platform)
+        end
+        addBot(b)
+    end
+end```

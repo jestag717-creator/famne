@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hagey DSTAT | Network Analytics Dashboard</title>
+  <style>
+    /* Your existing CSS remains the same */
+    :root {
+      --primary: #ff3366;
+      --primary-dark: #e62e5c;
+      --secondary: #00d4ff;
+      --accent: #ffcc00;
+      --success: #00ff88;
+      --warning: #ffaa00;
+      --danger: #ff4444;
+      --bg-dark: #0a0a12;
+      --bg-darker: #050508;
+      --bg-card: #151521;
+      --bg-hover: #1e1e2d;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0cc;
+      --text-muted: #6b6b8a;
+      --border: #2a2a3a;
+      --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --radius: 16px;
+      --radius-sm: 8px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 3px;
+      background: var(--gradient);
+      border-radius: 2px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .logo-text {
+      font-size: 42px;
+      font-weight: 900;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(255, 51, 102, 0.3);
+    }
+
+    .tagline {
+      color: var(--text-secondary);
+      font-size: 18px;
+      font-weight: 500;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .server-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 50px;
+    }
+
+    .server-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .server-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: var(--transition);
+    }
+
+    .server-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-8px);
+      box-shadow: var(--shadow);
+    }
+
+    .server-card:hover::before {
+      left: 100%;
+    }
+
+    .server-card.active {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, var(--bg-card), rgba(255, 51, 102, 0.1));
+      box-shadow: 0 0 0 3px rgba(255, 51, 102, 0.2), var(--shadow);
+    }
+
+    .server-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .server-ip {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .server-tags {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .server-tag {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-offline {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .tag-online {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .tag-attack {
+      background: rgba(255, 51, 102, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      animation: pulse 2s infinite;
+    }
+
+    .server-limit {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--secondary);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 16px;
+    }
+
+    .server-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat {
+      text-align: center;
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .chart-area {
+      background: var(--bg-darker);
+      border-radius: var(--radius);
+      padding: 30px;
+      margin-bottom: 40px;
+      border: 1px solid var(--border);
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .selected-server-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .selected-server-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .selected-server-text h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .selected-server-text p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .copy-btn {
+      padding: 10px 20px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--secondary);
+      border-radius: var(--radius-sm);
+      color: var(--secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .copy-btn:hover {
+      background: var(--secondary);
+      color: var(--bg-dark);
+      transform: translateY(-2px);
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--success), #00cc77);
+      border-radius: 25px;
+      color: var(--bg-dark);
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .live-badge::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shine 3s infinite;
+    }
+
+    .live-pulse {
+      width: 12px;
+      height: 12px;
+      background: var(--bg-dark);
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .live-pulse::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: var(--bg-dark);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .chart-container {
+      height: 350px;
+      margin-bottom: 30px;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .chart-container:last-child {
+      margin-bottom: 0;
+    }
+
+    .notification {
+      position: fixed;
+      top: 30px;
+      right: 30px;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transform: translateX(400px);
+      transition: var(--transition);
+      z-index: 1000;
+      max-width: 400px;
+      border: 1px solid var(--border);
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .footer {
+      text-align: center;
+      padding: 40px 0 20px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-heart {
+      color: var(--primary);
+      animation: heartbeat 1.5s ease infinite;
+      display: inline-block;
+    }
+
+    .version-toggle-bottom {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    .bottom-btn {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 25px;
+      color: var(--text-primary);
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+
+    .bottom-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 51, 102, 0.3);
+    }
+
+    .bottom-btn:hover .btn-text {
+      color: white;
+    }
+
+    .btn-icon {
+      font-size: 16px;
+      transition: transform 0.3s ease;
+    }
+
+    .bottom-btn:hover .btn-icon {
+      transform: rotate(180deg);
+    }
+
+    .btn-text {
+      color: var(--text-secondary);
+      transition: color 0.3s ease;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      
+      .logo-text {
+        font-size: 32px;
+      }
+      
+      .server-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .chart-header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+      
+      .selected-server-info {
+        flex-direction: column;
+      }
+      
+      .header-controls {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .copy-btn, .live-badge {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Version Toggle Button -->
+  <div class="version-toggle-bottom">
+    <button class="bottom-btn" id="versionToggle">
+      <span class="btn-icon">🔄</span>
+      <span class="btn-text">Switch to Old Version</span>
+    </button>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">H</div>
+        <div class="logo-text">Hagey DSTAT</div>
+      </div>
+      <p class="tagline">Real-time network analytics and monitoring dashboard with advanced attack detection</p>
+    </div>
+
+    <div class="server-grid">
+      <div class="server-card" data-url="http://nodexu.servegame.com:3000/stats">
+        <div class="server-name">Server 1 - IONOS</div>
+        <div class="server-ip">47.84.117.249:3000</div>
+        <div class="server-tags">
+          <div class="server-tag tag-offline">Offline</div>
+        </div>
+        <div class="server-limit">Max Limit: 1 Gbps</div>
+        <div class="server-stats">
+          <div class="stat">
+            <div class="stat-value">0.000</div>
+            <div class="stat-label">Mbps</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Packets/s</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0ms</div>
+            <div class="stat-label">Ping</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="server-card" data-url="http://51.75.118.165:20142/stats">
+        <div class="server-name">Server 2 - OVH SAS</div>
+        <div class="server-ip">51.75.118.165:20142</div>
+        <div class="server-tags">
+          <div class="server-tag tag-offline">Offline</div>
+        </div>
+        <div class="server-limit">Max Limit: 5 Gbps</div>
+        <div class="server-stats">
+          <div class="stat">
+            <div class="stat-value">0.000</div>
+            <div class="stat-label">Mbps</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Packets/s</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0ms</div>
+            <div class="stat-label">Ping</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="server-card" data-url="http://108.181.221.47:40046/stats">
+        <div class="server-name">Server 3 - HostRush</div>
+        <div class="server-ip">108.181.221.47:40046</div>
+        <div class="server-tags">
+          <div class="server-tag tag-offline">Offline</div>
+        </div>
+        <div class="server-limit">Max Limit: 500 Mbps</div>
+        <div class="server-stats">
+          <div class="stat">
+            <div class="stat-value">0.000</div>
+            <div class="stat-label">Mbps</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Packets/s</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0ms</div>
+            <div class="stat-label">Ping</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="server-card" data-url="http://209.182.235.134:30016/stats">
+        <div class="server-name">Server 4 - HIVELOCITY</div>
+        <div class="server-ip">209.182.235.134:30016</div>
+        <div class="server-tags">
+          <div class="server-tag tag-offline">Offline</div>
+        </div>
+        <div class="server-limit">Max Limit: 500 Mbps</div>
+        <div class="server-stats">
+          <div class="stat">
+            <div class="stat-value">0.000</div>
+            <div class="stat-label">Mbps</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Packets/s</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">0ms</div>
+            <div class="stat-label">Ping</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-area">
+      <div class="chart-header">
+        <div class="selected-server-info">
+          <div class="selected-server-icon">📊</div>
+          <div class="selected-server-text">
+            <h2 id="selectedServerName">Select a server to begin monitoring</h2>
+            <p id="selectedServerIp">Real-time network analytics will appear here</p>
+          </div>
+        </div>
+        <div class="header-controls">
+          <button class="copy-btn" id="copyBtn" style="display: none;">Copy IP & Port</button>
+          <div class="live-badge" id="liveIndicator" style="display: none;">
+            <div class="live-pulse"></div>
+            <span>LIVE MONITORING</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="bandwidth" class="chart-container"></div>
+      <div id="packets" class="chart-container"></div>
+    </div>
+
+    <div class="footer">
+      Made with <span class="footer-heart">💖</span> by the Hagey DSTAT team!
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script>
+    const MAX_POINTS = 20;
+    const FETCH_INTERVAL = 2000;
+    const ATTACK_THRESHOLD = 1.0;
+    let currentAPI = null;
+    let fetchInterval = null;
+    let serverStatus = {};
+
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      const notification = document.getElementById("notification");
+      const liveIndicator = document.getElementById("liveIndicator");
+      const copyBtn = document.getElementById("copyBtn");
+      const versionToggle = document.getElementById("versionToggle");
+
+      function showNotification(msg, type = 'info') {
+        if (!notification) return;
+        notification.textContent = msg;
+        notification.style.borderLeftColor = type === 'error' ? 'var(--danger)' : 
+                                           type === 'warning' ? 'var(--warning)' : 'var(--primary)';
+        notification.classList.add("show");
+        setTimeout(() => notification.classList.remove("show"), 3000);
+      }
+
+      // Fixed Highcharts tooltip formatter
+      const bandwidthChart = Highcharts.chart('bandwidth', {
+        chart: { 
+          type: 'areaspline', 
+          backgroundColor: 'transparent',
+          animation: { duration: 500 }
+        },
+        title: { 
+          text: 'Bandwidth Usage (Mbps)',
+          align: 'left',
+          style: { color: 'var(--text-primary)', fontSize: '18px', fontWeight: '600' }
+        },
+        xAxis: { 
+          type: 'datetime',
+          lineColor: 'var(--border)',
+          tickColor: 'var(--border)',
+          labels: { style: { color: 'var(--text-muted)' } }
+        },
+        yAxis: {
+          title: null,
+          gridLineColor: 'var(--border)',
+          labels: { 
+            style: { color: 'var(--text-muted)' },
+            formatter: function() {
+              return this.value === -1 ? '-1' : this.value;
+            }
+          },
+          min: -2
+        },
+        tooltip: {
+          backgroundColor: 'var(--bg-card)',
+          borderColor: 'var(--border)',
+          style: { color: 'var(--text-primary)' },
+          formatter: function() {
+            if (!this.points || !Array.isArray(this.points)) return '';
+            
+            let tooltip = `<b>${Highcharts.dateFormat('%H:%M:%S', this.x)}</b><br/>`;
+            this.points.forEach(point => {
+              if (!point || !point.series || !point.series.name) return;
+              const value = point.y === -1 ? 'No Data' : point.y.toFixed(3);
+              tooltip += `<span style="color:${point.color || '#fff'}">●</span> ${point.series.name}: <b>${value}</b><br/>`;
+            });
+            return tooltip;
+          }
+        },
+        legend: {
+          itemStyle: { color: 'var(--text-secondary)' },
+          itemHoverStyle: { color: 'var(--text-primary)' }
+        },
+        credits: { enabled: false },
+        series: [
+          { 
+            name: 'Incoming', 
+            data: [],
+            color: 'var(--primary)',
+            fillOpacity: 0.1
+          }, 
+          { 
+            name: 'Outgoing', 
+            data: [],
+            color: 'var(--secondary)',
+            fillOpacity: 0.1
+          }
+        ]
+      });
+
+      const packetsChart = Highcharts.chart('packets', {
+        chart: { 
+          type: 'areaspline', 
+          backgroundColor: 'transparent',
+          animation: { duration: 500 }
+        },
+        title: { 
+          text: 'Packet Traffic (Packets/sec)',
+          align: 'left',
+          style: { color: 'var(--text-primary)', fontSize: '18px', fontWeight: '600' }
+        },
+        xAxis: { 
+          type: 'datetime',
+          lineColor: 'var(--border)',
+          tickColor: 'var(--border)',
+          labels: { style: { color: 'var(--text-muted)' } }
+        },
+        yAxis: {
+          title: null,
+          gridLineColor: 'var(--border)',
+          labels: { 
+            style: { color: 'var(--text-muted)' },
+            formatter: function() {
+              return this.value === -1 ? '-1' : this.value;
+            }
+          },
+          min: -2
+        },
+        tooltip: {
+          backgroundColor: 'var(--bg-card)',
+          borderColor: 'var(--border)',
+          style: { color: 'var(--text-primary)' },
+          formatter: function() {
+            if (!this.points || !Array.isArray(this.points)) return '';
+            
+            let tooltip = `<b>${Highcharts.dateFormat('%H:%M:%S', this.x)}</b><br/>`;
+            this.points.forEach(point => {
+              if (!point || !point.series || !point.series.name) return;
+              const value = point.y === -1 ? 'No Data' : Math.round(point.y);
+              tooltip += `<span style="color:${point.color || '#fff'}">●</span> ${point.series.name}: <b>${value}</b><br/>`;
+            });
+            return tooltip;
+          }
+        },
+        legend: {
+          itemStyle: { color: 'var(--text-secondary)' },
+          itemHoverStyle: { color: 'var(--text-primary)' }
+        },
+        credits: { enabled: false },
+        series: [
+          { 
+            name: 'Incoming', 
+            data: [],
+            color: 'var(--accent)',
+            fillOpacity: 0.1
+          }, 
+          { 
+            name: 'Outgoing', 
+            data: [],
+            color: 'var(--success)',
+            fillOpacity: 0.1
+          }
+        ]
+      });
+
+      async function fetchStats() {
+  if (!currentAPI) return;
+  
+  try {
+    const res = await fetch(currentAPI);
+    const data = await res.json();
+    const now = Date.now();
+
+    const incomingMbps = parseFloat(data.incomingMbps) || 0;
+    const outgoingMbps = parseFloat(data.outgoingMbps) || 0;
+    const incomingPackets = parseFloat(data.incomingPackets) || 0;
+    const outgoingPackets = parseFloat(data.outgoingPackets) || 0;
+
+    bandwidthChart.series[0].addPoint([now, incomingMbps], true, bandwidthChart.series[0].data.length >= MAX_POINTS);
+    bandwidthChart.series[1].addPoint([now, outgoingMbps], true, bandwidthChart.series[1].data.length >= MAX_POINTS);
+
+    packetsChart.series[0].addPoint([now, incomingPackets], true, packetsChart.series[0].data.length >= MAX_POINTS);
+    packetsChart.series[1].addPoint([now, outgoingPackets], true, packetsChart.series[1].data.length >= MAX_POINTS);
+
+    updateServerStatus(currentAPI, true, incomingMbps + outgoingMbps, incomingPackets + outgoingPackets);
+
+    if (incomingMbps > ATTACK_THRESHOLD) {
+      showNotification("🚨 High traffic detected - possible attack!", 'warning');
+    }
+
+  } catch (err) {
+    console.error("Fetch error:", err);
+    const now = Date.now();
+    bandwidthChart.series[0].addPoint([now, -1], true, bandwidthChart.series[0].data.length >= MAX_POINTS);
+    bandwidthChart.series[1].addPoint([now, -1], true, bandwidthChart.series[1].data.length >= MAX_POINTS);
+    packetsChart.series[0].addPoint([now, -1], true, packetsChart.series[0].data.length >= MAX_POINTS);
+    packetsChart.series[1].addPoint([now, -1], true, packetsChart.series[1].data.length >= MAX_POINTS);
+    
+    updateServerStatus(currentAPI, false, 0, 0);
+    showNotification("❌ Connection lost - server offline", 'error');
+  }
+}
+
+// New function to check all servers status
+async function checkAllServersStatus() {
+  const servers = [
+    "http://217.154.161.167:9460/stats",
+    "http://51.75.118.165:20142/stats",
+    "http://108.181.221.47:40046/stats",
+    "http://209.182.235.134:30016/stats"
+  ];
+
+  for (const serverUrl of servers) {
+    // Skip the currently selected server (it's already being updated by fetchStats)
+    if (serverUrl === currentAPI) continue;
+    
+    try {
+      const res = await fetch(serverUrl);
+      const data = await res.json();
+      
+      const incomingMbps = parseFloat(data.incomingMbps) || 0;
+      const outgoingMbps = parseFloat(data.outgoingMbps) || 0;
+      const incomingPackets = parseFloat(data.incomingPackets) || 0;
+      const outgoingPackets = parseFloat(data.outgoingPackets) || 0;
+      
+      updateServerStatus(serverUrl, true, incomingMbps + outgoingMbps, incomingPackets + outgoingPackets);
+    } catch (err) {
+      updateServerStatus(serverUrl, false, 0, 0);
+    }
+    
+    // Small delay between requests to avoid overwhelming
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
+
+// Also update the updateServerStatus function to handle ping better:
+function updateServerStatus(serverUrl, online, bandwidth = 0, packets = 0) {
+  serverStatus[serverUrl] = { online, bandwidth, packets };
+  
+  document.querySelectorAll('.server-card').forEach(card => {
+    if (card.dataset.url === serverUrl) {
+      const tagsContainer = card.querySelector('.server-tags');
+      const statsContainer = card.querySelector('.server-stats');
+      
+      if (!tagsContainer || !statsContainer) return;
+      
+      const bandwidthEl = statsContainer.querySelector('.stat:nth-child(1) .stat-value');
+      const packetsEl = statsContainer.querySelector('.stat:nth-child(2) .stat-value');
+      const pingEl = statsContainer.querySelector('.stat:nth-child(3) .stat-value');
+      
+      if (!bandwidthEl || !packetsEl || !pingEl) return;
+      
+      tagsContainer.innerHTML = '';
+      
+      if (online) {
+        const onlineTag = document.createElement('div');
+        onlineTag.className = 'server-tag tag-online';
+        onlineTag.textContent = 'Online';
+        tagsContainer.appendChild(onlineTag);
+        
+        if (bandwidth > ATTACK_THRESHOLD) {
+          const attackTag = document.createElement('div');
+          attackTag.className = 'server-tag tag-attack';
+          attackTag.textContent = 'Attack Detected';
+          tagsContainer.appendChild(attackTag);
+        }
+        
+        bandwidthEl.textContent = bandwidth.toFixed(3);
+        packetsEl.textContent = Math.round(packets);
+        pingEl.textContent = '?ms'; // We don't have actual ping data from the API
+      } else {
+        const offlineTag = document.createElement('div');
+        offlineTag.className = 'server-tag tag-offline';
+        offlineTag.textContent = 'Offline';
+        tagsContainer.appendChild(offlineTag);
+        
+        bandwidthEl.textContent = '0.000';
+        packetsEl.textContent = '0';
+        pingEl.textContent = '∞ms';
+      }
+    }
+  });
+}
+
+setInterval(checkAllServersStatus, 3000);
+
+if (copyBtn) {
+  copyBtn.addEventListener('click', function() {
+    const ipElement = document.getElementById('selectedServerIp');
+    if (!ipElement) return;
+    
+    const ip = ipElement.textContent;
+    
+    // Modern clipboard API with fallback
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ip).then(() => {
+        showNotification('✅ IP & Port copied to clipboard!', 'info');
+      }).catch(err => {
+        // Fallback to old method if modern API fails
+        fallbackCopyText(ip);
+      });
+    } else {
+      // Use fallback method for older browsers
+      fallbackCopyText(ip);
+    }
+  });
+}
+
+// Fallback copy method using execCommand
+function fallbackCopyText(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-999999px';
+  textArea.style.top = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) {
+      showNotification('✅ IP & Port copied to clipboard!', 'info');
+    } else {
+      showNotification('❌ Failed to copy IP - please copy manually', 'error');
+    }
+  } catch (err) {
+    document.body.removeChild(textArea);
+    showNotification('❌ Failed to copy IP - please copy manually', 'error');
+  }
+}
+
+      // Server card click handlers
+      document.querySelectorAll('.server-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.server-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          
+          currentAPI = card.dataset.url;
+          const serverName = card.querySelector('.server-name').textContent;
+          const serverIp = card.querySelector('.server-ip').textContent;
+
+          document.getElementById('selectedServerName').textContent = serverName;
+          document.getElementById('selectedServerIp').textContent = serverIp;
+          if (liveIndicator) liveIndicator.style.display = 'flex';
+          if (copyBtn) copyBtn.style.display = 'block';
+
+          bandwidthChart.series.forEach(s => s.setData([]));
+          packetsChart.series.forEach(s => s.setData([]));
+
+          if (fetchInterval) clearInterval(fetchInterval);
+          fetchStats();
+          fetchInterval = setInterval(fetchStats, FETCH_INTERVAL);
+
+          showNotification(`📡 Connected to ${serverName}`, 'info');
+        });
+      });
+
+      // Initialize server status
+      document.querySelectorAll('.server-card').forEach(card => {
+        const serverUrl = card.dataset.url;
+        if (serverUrl) {
+          updateServerStatus(serverUrl, false, 0, 0);
+        }
+      });
+
+      // Version toggle functionality
+      if (versionToggle) {
+        versionToggle.addEventListener('click', function() {
+          window.location.href = 'index.html';
+        });
+      }
+    });
+  </script>
+</body>
+</html>
